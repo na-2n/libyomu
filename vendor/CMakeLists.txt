@@ -1,0 +1,3 @@
+add_subdirectory(./nlohmann_json)
+add_subdirectory(./libzippp)
+
