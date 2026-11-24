@@ -23,18 +23,22 @@ namespace yomu {
         std::vector<Term> _terms;
 
     public:
-        Dictionary();
-
+        [[nodiscard]]
         inline const std::vector<Term>& terms() const { return _terms; }
 
         void loadMetadata(nlohmann::json& obj);
 
         void loadTermBank(nlohmann::json& arr);
 
+        [[nodiscard]]
         inline const std::string& title() const { return _meta.title; }
+
+        [[nodiscard]]
         inline const std::string& revision() const { return _meta.revision; }
+
+        [[nodiscard]]
         inline int format() const { return _format; }
 
-        static Dictionary* fromFile(const std::string& fileName);
+        static std::unique_ptr<Dictionary> fromFile(const std::string& fileName);
     };
 } // namespace yomu

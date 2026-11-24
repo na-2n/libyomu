@@ -152,3 +152,4 @@ $RECYCLE.BIN/
 dev/
 *.zip
 build/
+compile-commands.json

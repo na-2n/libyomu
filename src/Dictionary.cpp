@@ -13,8 +13,6 @@
 #define LOG_INFO(str, ...) (std::cout << std::format(str, __VA_ARGS__) << std::endl)
 
 namespace yomu {
-    Dictionary::Dictionary() {}
-
     void Dictionary::loadMetadata(nlohmann::json& obj)
     {
         if (!obj.contains("title")) {
@@ -26,36 +24,37 @@ namespace yomu {
         }
 
         if (obj.contains("format")) {
-            _format = obj["format"];
+            _format = obj.at("format");
         } else if (obj.contains("version")) {
-            _format = obj["version"];
+            _format = obj.at("version");
         } else {
             throw; // TODO: throw useful error:
         }
 
-        _meta.title = obj["title"];
-        _meta.revision = obj["revision"];
+        _meta.title = obj.at("title");
+        _meta.revision = obj.at("revision");
 
         if (obj.contains("sequenced")) {
-            _sequenced = obj["sequenced"];
+            _sequenced = obj.at("sequenced");
         }
 
         if (obj.contains("description")) {
-            _meta.description = obj["description"];
+            _meta.description = obj.at("description");
         }
     }
 
     void Dictionary::loadTermBank(nlohmann::json& arr)
     {
-        if (!arr.is_array())
+        if (!arr.is_array()) {
             throw; // TODO: return useful error
+        }
 
         for (auto obj : arr) {
             _terms.push_back(Term::fromJson(obj, _format));
         }
     }
 
-    Dictionary* Dictionary::fromFile(const std::string& fileName)
+    std::unique_ptr<Dictionary> Dictionary::fromFile(const std::string& fileName)
     {
         enum class FileType {
             Index,
@@ -69,12 +68,13 @@ namespace yomu {
         auto zip = libzippp::ZipArchive{fileName};
 
         zip.open();
-        if (!zip.isOpen())
+        if (!zip.isOpen()) {
             throw; // TODO: throw useful error
+        }
 
-        auto dict = new Dictionary{};
+        auto dict = std::make_unique<Dictionary>();
         auto loadEntry = [&](libzippp::ZipEntry& entry, FileType type) {
-            auto data = reinterpret_cast<char*>(entry.readAsBinary());
+            auto data = entry.readAsBinary();
             auto obj = nlohmann::json::parse(data, data + entry.getSize());
 
             LOG_INFO("Loading file: {}", entry.getName());
@@ -93,8 +93,9 @@ namespace yomu {
         };
 
         auto index = zip.getEntry("index.json");
-        if (index.isNull())
+        if (index.isNull()) {
             throw; // TODO: throw useful error
+        }
 
         loadEntry(index, FileType::Index);
 

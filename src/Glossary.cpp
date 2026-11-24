@@ -10,41 +10,107 @@ namespace yomu {
         : _text{text}
     {}
 
+    ImageGlossary::ImageGlossary(std::string_view path)
+        : _path{path}
+    {}
+
     Glossary::Glossary(GlossaryType type, std::unique_ptr<GlossaryItem> item)
         : _type{type}, _item{std::move(item)}
     {}
 
-    Glossary Glossary::fromJson(const nlohmann::json& o)
+    void from_json(const nlohmann::json& obj, TextGlossary& g)
     {
-        GlossaryType glossType;
-        std::unique_ptr<GlossaryItem> gloss = nullptr;
+        if (obj.is_string()) {
+            obj.get_to(g._text);
+        } else if (obj.is_object()) {
+            obj.at("text").get_to(g._text);
+        } else {
+            throw; // TODO: throw useful error
+        }
+    }
 
+    void from_json(const nlohmann::json& obj, ImageGlossary& g)
+    {
+        if (!obj.is_object()) {
+            throw; // TODO: throw useful error
+        }
+
+        if (!obj.contains("path")) {
+            throw; // TODO: throw useful error
+        }
+
+        obj.at("path").get_to(g._path);
+
+        if (obj.contains("pixelated")) {
+            if (obj.at("pixelated").get<bool>()) {
+                g._rendering = ImageGlossary::RenderingType::Pixelated;
+            }
+        }
+
+        if (obj.contains("imageRendering")) {
+            auto type = obj.at("imageRendering").get<std::string>();
+
+            g._rendering = type == "auto"          ? ImageGlossary::RenderingType::Auto
+                           : type == "pixelated"   ? ImageGlossary::RenderingType::Pixelated
+                           : type == "crisp-edges" ? ImageGlossary::RenderingType::CrispEdges
+                                                   : ImageGlossary::RenderingType::Auto;
+        }
+
+        if (obj.contains("appearance")) {
+            auto type = obj.at("appearance").get<std::string>();
+
+            g._appearance = type == "auto"         ? ImageGlossary::AppearanceType::Auto
+                            : type == "monochrome" ? ImageGlossary::AppearanceType::Monochrome
+                                                   : ImageGlossary::AppearanceType::Auto;
+        }
+
+        if (obj.contains("background")) {
+            obj.at("background").get_to(g._showBackground);
+        }
+
+        if (obj.contains("collapsed")) {
+            obj.at("collapsed").get_to(g._collapsed);
+        }
+
+        if (obj.contains("collapsible")) {
+            obj.at("collapsible").get_to(g._collapsible);
+        }
+    }
+    
+    void from_json(const nlohmann::json& o, Glossary& g)
+    {
         if (o.is_string()) {
-            glossType = GlossaryType::Text;
-
-            auto text = o.get<std::string>();
-            gloss = std::make_unique<TextGlossary>(text);
+            g._type = GlossaryType::Text;
         } else if (o.is_object()) {
-            auto type = o["type"].get<std::string>();
+            auto type = o.at("type").get<std::string>();
 
             if (type == "text") {
-                glossType = GlossaryType::Text;
-
-                auto text = o["text"].get<std::string>();
-                gloss = std::make_unique<TextGlossary>(text);
+                g._type = GlossaryType::Text;
             } else if (type == "image") {
-                glossType = GlossaryType::Image;
+                g._type = GlossaryType::Image;
             } else if (type == "structured-content") {
-                glossType = GlossaryType::Structured;
+                g._type = GlossaryType::Structured;
             } else {
                 throw; // TODO: proper exception
             }
         } else if (o.is_array()) { // deinflection
-            glossType = GlossaryType::Deinflection;
+            g._type = GlossaryType::Deinflection;
         } else {
             throw; // TODO: proper exception
         }
 
-        return {glossType, std::move(gloss)};
+        switch (g._type) {
+            case GlossaryType::Text:
+                g._item = std::make_unique<TextGlossary>(o.get<TextGlossary>());
+                break;
+
+            case GlossaryType::Image:
+                g._item = std::make_unique<ImageGlossary>(o.get<ImageGlossary>());
+                break;
+
+            default:
+                g._item = nullptr;
+                break;
+        }
     }
 } // namespace yomu
