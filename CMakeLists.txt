@@ -9,7 +9,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g")
 project(libyomu)
 
 add_subdirectory(./vendor)
-add_subdirectory(./test)
+add_subdirectory(./app)
 
 add_library(yomu)
 
@@ -18,12 +18,21 @@ set(SRC
     ./src/Term.cpp
     ./src/Dictionary.cpp
     ./src/Glossary.cpp
+    ./src/Frequency.cpp
+    ./src/TermMeta.cpp
+    ./src/Kanji.cpp
+    ./src/Tag.cpp
 )
 
 set(INC
     ./include/libyomu/Term.hpp
     ./include/libyomu/Glossary.hpp
     ./include/libyomu/Dictionary.hpp
+    ./include/libyomu/Error.hpp
+    ./include/libyomu/Frequency.hpp
+    ./include/libyomu/TermMeta.hpp
+    ./include/libyomu/Kanji.hpp
+    ./include/libyomu/Tag.hpp
 )
 
 target_sources(yomu

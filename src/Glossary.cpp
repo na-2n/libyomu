@@ -1,5 +1,7 @@
 #include "libyomu/Glossary.hpp"
 
+#include "libyomu/Error.hpp"
+
 #include <nlohmann/json.hpp>
 
 #include <memory>
@@ -25,21 +27,38 @@ namespace yomu {
         } else if (obj.is_object()) {
             obj.at("text").get_to(g._text);
         } else {
-            throw; // TODO: throw useful error
+            throw DictionaryError{"Invalid text glossary: {}", obj.dump()};
         }
     }
 
     void from_json(const nlohmann::json& obj, ImageGlossary& g)
     {
         if (!obj.is_object()) {
-            throw; // TODO: throw useful error
+            throw DictionaryError{"Invalid image glossary: {}", obj.dump()};
         }
 
         if (!obj.contains("path")) {
-            throw; // TODO: throw useful error
+            throw DictionaryError{"Image glossary is missing the required 'path' field: {}",
+                                  obj.dump()};
         }
 
         obj.at("path").get_to(g._path);
+
+        for (auto [key, field] : {std::pair{"width", &g._width}, std::pair{"height", &g._height}}) {
+            if (obj.contains(key)) {
+                *field = obj.at(key).get<int>();
+            }
+        }
+
+        for (auto [key, field] : {
+                 std::pair{"title", &g._title},
+                 std::pair{"alt", &g._alt},
+                 std::pair{"description", &g._description},
+             }) {
+            if (obj.contains(key)) {
+                *field = obj.at(key).get<std::string>();
+            }
+        }
 
         if (obj.contains("pixelated")) {
             if (obj.at("pixelated").get<bool>()) {
@@ -76,7 +95,7 @@ namespace yomu {
             obj.at("collapsible").get_to(g._collapsible);
         }
     }
-    
+
     void from_json(const nlohmann::json& o, Glossary& g)
     {
         if (o.is_string()) {
@@ -91,12 +110,12 @@ namespace yomu {
             } else if (type == "structured-content") {
                 g._type = GlossaryType::Structured;
             } else {
-                throw; // TODO: proper exception
+                throw DictionaryError{"Unknown glossary type: {}", type};
             }
         } else if (o.is_array()) { // deinflection
             g._type = GlossaryType::Deinflection;
         } else {
-            throw; // TODO: proper exception
+            throw DictionaryError{"Invalid glossary: {}", o.dump()};
         }
 
         switch (g._type) {

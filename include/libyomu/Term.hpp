@@ -14,7 +14,7 @@ namespace yomu {
         std::string _reading;
         std::vector<std::string> _defTags;
         std::vector<std::string> _rules;
-        int _score;
+        int _score = 0;
         std::vector<Glossary> _glossary;
         int _sequenceNum = -1;
         std::vector<std::string> _termTags;
@@ -48,6 +48,6 @@ namespace yomu {
         [[nodiscard]]
         const std::vector<std::string>& termTags() const { return _termTags; }
 
-        static Term fromJson(nlohmann::json& obj, int format);
+        static Term fromJson(const nlohmann::json& obj, int format);
     };
 } // namespace yomu

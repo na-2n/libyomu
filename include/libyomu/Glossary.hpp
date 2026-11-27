@@ -4,6 +4,7 @@
 
 #include <memory>
 #include <optional>
+#include <string>
 
 namespace yomu {
     enum class GlossaryType {
@@ -48,6 +49,11 @@ namespace yomu {
 
     private:
         std::string _path;
+        std::optional<int> _width;
+        std::optional<int> _height;
+        std::optional<std::string> _title;
+        std::optional<std::string> _alt;
+        std::optional<std::string> _description;
         RenderingType _rendering = RenderingType::Auto;
         AppearanceType _appearance = AppearanceType::Auto;
         bool _showBackground = true;
@@ -61,6 +67,23 @@ namespace yomu {
 
         [[nodiscard]]
         inline const std::string& path() const { return _path; }
+
+        // Preferred display size
+        [[nodiscard]]
+        inline const std::optional<int>& width() const { return _width; }
+
+        [[nodiscard]]
+        inline const std::optional<int>& height() const { return _height; }
+
+        // Hover text
+        [[nodiscard]]
+        inline const std::optional<std::string>& title() const { return _title; }
+
+        [[nodiscard]]
+        inline const std::optional<std::string>& alt() const { return _alt; }
+
+        [[nodiscard]]
+        inline const std::optional<std::string>& description() const { return _description; }
 
         [[nodiscard]]
         inline RenderingType rendering() const { return _rendering; }

@@ -1,0 +1,52 @@
+#include "libyomu/Tag.hpp"
+
+#include "libyomu/Error.hpp"
+
+#include <nlohmann/json.hpp>
+
+#include <string>
+
+namespace yomu {
+    Tag Tag::fromJson(const nlohmann::json& arr)
+    {
+        enum FieldIndices { // NOLINT(*-use-enum-class)
+            NAME = 0,
+            CATEGORY = 1,
+            ORDER = 2,
+            NOTES = 3,
+            SCORE = 4,
+            FIELD_COUNT,
+        };
+
+        if (!arr.is_array() || arr.size() != FIELD_COUNT) {
+            throw DictionaryError{"Invalid tag entry: {}", arr.dump()};
+        }
+
+        auto tag = Tag{};
+
+        arr.at(NAME).get_to(tag._name);
+        arr.at(CATEGORY).get_to(tag._category);
+        arr.at(ORDER).get_to(tag._order);
+        arr.at(NOTES).get_to(tag._notes);
+        arr.at(SCORE).get_to(tag._score);
+
+        return tag;
+    }
+
+    Tag Tag::fromJson(std::string_view name, const nlohmann::json& obj)
+    {
+        if (!obj.is_object()) {
+            throw DictionaryError{"Invalid legacy tag entry for '{}': {}", name, obj.dump()};
+        }
+
+        auto tag = Tag{};
+
+        tag._name = name;
+        tag._category = obj.value("category", "");
+        tag._order = obj.value("order", 0);
+        tag._notes = obj.value("notes", "");
+        tag._score = obj.value("score", 0);
+
+        return tag;
+    }
+} // namespace yomu
