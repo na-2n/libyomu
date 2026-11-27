@@ -22,6 +22,8 @@ set(SRC
     ./src/TermMeta.cpp
     ./src/Kanji.cpp
     ./src/Tag.cpp
+    ./src/Image.cpp
+    ./src/StructuredContent.cpp
 )
 
 set(INC
@@ -33,6 +35,8 @@ set(INC
     ./include/libyomu/TermMeta.hpp
     ./include/libyomu/Kanji.hpp
     ./include/libyomu/Tag.hpp
+    ./include/libyomu/Image.hpp
+    ./include/libyomu/StructuredContent.hpp
 )
 
 target_sources(yomu

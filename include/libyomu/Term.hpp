@@ -5,6 +5,7 @@
 #include <nlohmann/json.hpp>
 
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace yomu {
@@ -22,31 +23,55 @@ namespace yomu {
     public:
         Term() = default;
 
-        inline static const std::string FileMatch = "term_bank_";
+        static constexpr std::string_view FileMatch = "term_bank_";
 
         [[nodiscard]]
-        inline const std::string& expression() const { return _expression; }
+        inline const std::string& expression() const
+        {
+            return _expression;
+        }
 
         [[nodiscard]]
-        inline const std::string& reading() const { return _reading; }
+        inline const std::string& reading() const
+        {
+            return _reading;
+        }
 
         [[nodiscard]]
-        const std::vector<std::string>& definitionTags() const { return _defTags; }
+        const std::vector<std::string>& definitionTags() const
+        {
+            return _defTags;
+        }
 
         [[nodiscard]]
-        const std::vector<std::string>& rules() const { return _rules; }
+        const std::vector<std::string>& rules() const
+        {
+            return _rules;
+        }
 
         [[nodiscard]]
-        inline int score() const { return _score; }
+        inline int score() const
+        {
+            return _score;
+        }
 
         [[nodiscard]]
-        const std::vector<Glossary>& glossary() const { return _glossary; }
+        const std::vector<Glossary>& glossary() const
+        {
+            return _glossary;
+        }
 
         [[nodiscard]]
-        inline int sequenceNum() const { return _sequenceNum; }
+        inline int sequenceNum() const
+        {
+            return _sequenceNum;
+        }
 
         [[nodiscard]]
-        const std::vector<std::string>& termTags() const { return _termTags; }
+        const std::vector<std::string>& termTags() const
+        {
+            return _termTags;
+        }
 
         static Term fromJson(const nlohmann::json& obj, int format);
     };

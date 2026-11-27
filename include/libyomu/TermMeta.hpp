@@ -7,6 +7,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <variant>
 #include <vector>
 
@@ -21,6 +22,15 @@ namespace yomu {
     class TermMetaItem {
     public:
         virtual ~TermMetaItem() = default;
+
+    protected:
+        // Protected so items can only be copied or moved as their concrete type,
+        // preventing slicing through a TermMetaItem reference
+        TermMetaItem() = default;
+        TermMetaItem(const TermMetaItem&) = default;
+        TermMetaItem(TermMetaItem&&) = default;
+        TermMetaItem& operator=(const TermMetaItem&) = default;
+        TermMetaItem& operator=(TermMetaItem&&) = default;
     };
 
     class FreqTermMeta : public TermMetaItem {
@@ -33,10 +43,16 @@ namespace yomu {
 
         // Empty when the frequency applies to every reading of the expression
         [[nodiscard]]
-        inline const std::optional<std::string>& reading() const { return _reading; }
+        inline const std::optional<std::string>& reading() const
+        {
+            return _reading;
+        }
 
         [[nodiscard]]
-        inline const Frequency& frequency() const { return _frequency; }
+        inline const Frequency& frequency() const
+        {
+            return _frequency;
+        }
 
         friend void from_json(const nlohmann::json& j, FreqTermMeta& m);
     };
@@ -57,7 +73,10 @@ namespace yomu {
             Pitch() = default;
 
             [[nodiscard]]
-            inline const std::variant<int, std::string>& position() const { return _position; }
+            inline const std::variant<int, std::string>& position() const
+            {
+                return _position;
+            }
 
             [[nodiscard]]
             inline std::optional<int> downstep() const
@@ -78,13 +97,22 @@ namespace yomu {
             }
 
             [[nodiscard]]
-            inline const std::vector<int>& nasalPositions() const { return _nasal; }
+            inline const std::vector<int>& nasalPositions() const
+            {
+                return _nasal;
+            }
 
             [[nodiscard]]
-            inline const std::vector<int>& devoicePositions() const { return _devoice; }
+            inline const std::vector<int>& devoicePositions() const
+            {
+                return _devoice;
+            }
 
             [[nodiscard]]
-            inline const std::vector<std::string>& tags() const { return _tags; }
+            inline const std::vector<std::string>& tags() const
+            {
+                return _tags;
+            }
         };
 
     private:
@@ -95,10 +123,16 @@ namespace yomu {
         PitchTermMeta() = default;
 
         [[nodiscard]]
-        inline const std::string& reading() const { return _reading; }
+        inline const std::string& reading() const
+        {
+            return _reading;
+        }
 
         [[nodiscard]]
-        inline const std::vector<Pitch>& pitches() const { return _pitches; }
+        inline const std::vector<Pitch>& pitches() const
+        {
+            return _pitches;
+        }
 
         friend void from_json(const nlohmann::json& j, PitchTermMeta& m);
     };
@@ -118,10 +152,16 @@ namespace yomu {
         IpaTermMeta() = default;
 
         [[nodiscard]]
-        inline const std::string& reading() const { return _reading; }
+        inline const std::string& reading() const
+        {
+            return _reading;
+        }
 
         [[nodiscard]]
-        inline const std::vector<Transcription>& transcriptions() const { return _transcriptions; }
+        inline const std::vector<Transcription>& transcriptions() const
+        {
+            return _transcriptions;
+        }
 
         friend void from_json(const nlohmann::json& j, IpaTermMeta& m);
     };
@@ -135,13 +175,19 @@ namespace yomu {
     public:
         TermMeta() = default;
 
-        inline static const std::string FileMatch = "term_meta_bank_";
+        static constexpr std::string_view FileMatch = "term_meta_bank_";
 
         [[nodiscard]]
-        inline const std::string& expression() const { return _expression; }
+        inline const std::string& expression() const
+        {
+            return _expression;
+        }
 
         [[nodiscard]]
-        inline TermMetaType type() const noexcept { return _type; }
+        inline TermMetaType type() const noexcept
+        {
+            return _type;
+        }
 
         [[nodiscard]]
         inline FreqTermMeta* frequency() const noexcept

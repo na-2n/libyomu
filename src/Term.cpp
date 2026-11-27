@@ -42,7 +42,7 @@ namespace yomu {
         }
 
         term._rules = util::strsplit(obj.at(RULES).get<std::string>(), " ");
-        term._score = obj.at(SCORE);
+        term._score = util::toInt(obj.at(SCORE));
 
         switch (format) {
             case 1: {
@@ -56,7 +56,7 @@ namespace yomu {
                 for (const auto& gloss : obj.at(GLOSSARY)) {
                     term._glossary.push_back(gloss.get<Glossary>());
                 }
-                if (auto seq = obj.at(SEQUENCE).get<int>(); seq >= 0) {
+                if (auto seq = util::toInt(obj.at(SEQUENCE)); seq >= 0) {
                     term._sequenceNum = seq;
                 }
                 term._termTags = util::strsplit(obj.at(TERM_TAGS).get<std::string>(), " ");

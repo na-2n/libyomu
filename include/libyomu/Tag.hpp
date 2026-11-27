@@ -17,22 +17,37 @@ namespace yomu {
     public:
         Tag() = default;
 
-        inline static const std::string FileMatch = "tag_bank_";
+        static constexpr std::string_view FileMatch = "tag_bank_";
 
         [[nodiscard]]
-        inline const std::string& name() const { return _name; }
+        inline const std::string& name() const
+        {
+            return _name;
+        }
 
         [[nodiscard]]
-        inline const std::string& category() const { return _category; }
+        inline const std::string& category() const
+        {
+            return _category;
+        }
 
         [[nodiscard]]
-        inline int order() const { return _order; }
+        inline int order() const
+        {
+            return _order;
+        }
 
         [[nodiscard]]
-        inline const std::string& notes() const { return _notes; }
+        inline const std::string& notes() const
+        {
+            return _notes;
+        }
 
         [[nodiscard]]
-        inline int score() const { return _score; }
+        inline int score() const
+        {
+            return _score;
+        }
 
         // Tag bank row: [name, category, order, notes, score]
         static Tag fromJson(const nlohmann::json& arr);

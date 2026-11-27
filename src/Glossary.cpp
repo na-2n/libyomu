@@ -8,18 +8,6 @@
 #include <string>
 
 namespace yomu {
-    TextGlossary::TextGlossary(std::string_view text)
-        : _text{text}
-    {}
-
-    ImageGlossary::ImageGlossary(std::string_view path)
-        : _path{path}
-    {}
-
-    Glossary::Glossary(GlossaryType type, std::unique_ptr<GlossaryItem> item)
-        : _type{type}, _item{std::move(item)}
-    {}
-
     void from_json(const nlohmann::json& obj, TextGlossary& g)
     {
         if (obj.is_string()) {
@@ -33,67 +21,32 @@ namespace yomu {
 
     void from_json(const nlohmann::json& obj, ImageGlossary& g)
     {
-        if (!obj.is_object()) {
-            throw DictionaryError{"Invalid image glossary: {}", obj.dump()};
+        from_json(obj, static_cast<Image&>(g));
+
+        if (obj.contains("description")) {
+            g._description = obj.at("description").get<std::string>();
+        }
+    }
+
+    void from_json(const nlohmann::json& obj, StructuredGlossary& g)
+    {
+        if (!obj.is_object() || !obj.contains("content")) {
+            throw DictionaryError{
+                "Structured content glossary is missing the required 'content' field: {}",
+                obj.dump()};
         }
 
-        if (!obj.contains("path")) {
-            throw DictionaryError{"Image glossary is missing the required 'path' field: {}",
-                                  obj.dump()};
+        g._content = ContentNode::fromJson(obj.at("content"));
+    }
+
+    void from_json(const nlohmann::json& obj, DeinflectionGlossary& g)
+    {
+        if (!obj.is_array() || obj.size() != 2 || !obj.at(0).is_string() || !obj.at(1).is_array()) {
+            throw DictionaryError{"Invalid deinflection glossary: {}", obj.dump()};
         }
 
-        obj.at("path").get_to(g._path);
-
-        for (auto [key, field] : {std::pair{"width", &g._width}, std::pair{"height", &g._height}}) {
-            if (obj.contains(key)) {
-                *field = obj.at(key).get<int>();
-            }
-        }
-
-        for (auto [key, field] : {
-                 std::pair{"title", &g._title},
-                 std::pair{"alt", &g._alt},
-                 std::pair{"description", &g._description},
-             }) {
-            if (obj.contains(key)) {
-                *field = obj.at(key).get<std::string>();
-            }
-        }
-
-        if (obj.contains("pixelated")) {
-            if (obj.at("pixelated").get<bool>()) {
-                g._rendering = ImageGlossary::RenderingType::Pixelated;
-            }
-        }
-
-        if (obj.contains("imageRendering")) {
-            auto type = obj.at("imageRendering").get<std::string>();
-
-            g._rendering = type == "auto"          ? ImageGlossary::RenderingType::Auto
-                           : type == "pixelated"   ? ImageGlossary::RenderingType::Pixelated
-                           : type == "crisp-edges" ? ImageGlossary::RenderingType::CrispEdges
-                                                   : ImageGlossary::RenderingType::Auto;
-        }
-
-        if (obj.contains("appearance")) {
-            auto type = obj.at("appearance").get<std::string>();
-
-            g._appearance = type == "auto"         ? ImageGlossary::AppearanceType::Auto
-                            : type == "monochrome" ? ImageGlossary::AppearanceType::Monochrome
-                                                   : ImageGlossary::AppearanceType::Auto;
-        }
-
-        if (obj.contains("background")) {
-            obj.at("background").get_to(g._showBackground);
-        }
-
-        if (obj.contains("collapsed")) {
-            obj.at("collapsed").get_to(g._collapsed);
-        }
-
-        if (obj.contains("collapsible")) {
-            obj.at("collapsible").get_to(g._collapsible);
-        }
+        obj.at(0).get_to(g._uninflected);
+        obj.at(1).get_to(g._rules);
     }
 
     void from_json(const nlohmann::json& o, Glossary& g)
@@ -125,6 +78,14 @@ namespace yomu {
 
             case GlossaryType::Image:
                 g._item = std::make_unique<ImageGlossary>(o.get<ImageGlossary>());
+                break;
+
+            case GlossaryType::Structured:
+                g._item = std::make_unique<StructuredGlossary>(o.get<StructuredGlossary>());
+                break;
+
+            case GlossaryType::Deinflection:
+                g._item = std::make_unique<DeinflectionGlossary>(o.get<DeinflectionGlossary>());
                 break;
 
             default:

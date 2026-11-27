@@ -1,32 +1,67 @@
 AccessModifierOffset: -4
-AlignAfterOpenBracket: Align
-AlignConsecutiveAssignments: None
-AlignConsecutiveBitFields: None
-AlignConsecutiveDeclarations: None
-AlignConsecutiveMacros: AcrossEmptyLinesAndComments
+AlignAfterOpenBracket: true
+AlignConsecutiveAssignments:
+  Enabled: false
+  AcrossEmptyLines: false
+  AcrossComments: false
+  AlignCompound: false
+  AlignFunctionDeclarations: false
+  AlignFunctionPointers: false
+  EnumAssignments: false
+  PadOperators: false
+AlignConsecutiveBitFields:
+  Enabled: false
+  AcrossEmptyLines: false
+  AcrossComments: false
+  AlignCompound: false
+  AlignFunctionDeclarations: false
+  AlignFunctionPointers: false
+  EnumAssignments: false
+  PadOperators: false
+AlignConsecutiveDeclarations:
+  Enabled: false
+  AcrossEmptyLines: false
+  AcrossComments: false
+  AlignCompound: false
+  AlignFunctionDeclarations: false
+  AlignFunctionPointers: false
+  EnumAssignments: false
+  PadOperators: false
+AlignConsecutiveMacros:
+  Enabled: true
+  AcrossEmptyLines: true
+  AcrossComments: true
+  AlignCompound: false
+  AlignFunctionDeclarations: true
+  AlignFunctionPointers: false
+  EnumAssignments: true
+  PadOperators: true
 AlignEscapedNewlines: Right
-AlignTrailingComments: false
+AlignTrailingComments:
+  AlignPPAndNotPP: true
+  Kind: Never
+  OverEmptyLines: 0
 AllowAllArgumentsOnNextLine: true
 AllowAllParametersOfDeclarationOnNextLine: true
 AllowShortBlocksOnASingleLine: Never
 AllowShortCaseLabelsOnASingleLine: false
 AllowShortEnumsOnASingleLine: false
-AllowShortFunctionsOnASingleLine: Inline
+AllowShortFunctionsOnASingleLine:
+  Empty: true
+  Inline: true
+  Other: false
 AllowShortIfStatementsOnASingleLine: Never
 AllowShortLambdasOnASingleLine: All
 AllowShortLoopsOnASingleLine: false
-AlwaysBreakAfterReturnType: None
 AlwaysBreakBeforeMultilineStrings: false
-AlwaysBreakTemplateDeclarations: No
-BinPackArguments: true
-BinPackParameters: true
 BitFieldColonSpacing: Both
+BreakAfterReturnType: None
 BreakBeforeBraces: Custom
 BraceWrapping:
   AfterCaseLabel: false
   AfterClass: false
   AfterFunction: true
-  AfterControlStatement: false
+  AfterControlStatement: Never
   SplitEmptyFunction: false
   AfterEnum: false
   AfterNamespace: false
@@ -40,30 +75,38 @@ BraceWrapping:
   SplitEmptyRecord: false
   SplitEmptyNamespace: false
 BreakBeforeBinaryOperators: None
-BreakBeforeConceptDeclarations: false
+BreakBeforeConceptDeclarations: Allowed
 BreakBeforeTernaryOperators: true
 BreakConstructorInitializers: BeforeColon
 PackConstructorInitializers: NextLineOnly
 ConstructorInitializerIndentWidth: 4
 BreakInheritanceList: BeforeColon
 BreakStringLiterals: true
+BreakTemplateDeclarations: Yes
 ColumnLimit: 100
 CompactNamespaces: false
-Cpp11BracedListStyle: true
+Cpp11BracedListStyle: AlignFirstComment
 DerivePointerAlignment: false
 EmptyLineBeforeAccessModifier: Always
 FixNamespaceComments: true
 IncludeBlocks: Preserve
 IndentCaseLabels: true
 IndentExternBlock: Indent
-IndentRequires: false
+IndentRequiresClause: false
 IndentWidth: 4
 ContinuationIndentWidth: 4
 IndentWrappedFunctionNames: false
-KeepEmptyLinesAtTheStartOfBlocks: false
+KeepEmptyLines:
+  AtEndOfFile: false
+  AtStartOfBlock: false
+  AtStartOfFile: true
 NamespaceIndentation: All
+PackArguments:
+  BinPack: BinPack
+PackParameters:
+  BinPack: BinPack
 PointerAlignment: Left
-SortUsingDeclarations: true
+SortUsingDeclarations: LexicographicNumeric
 SpaceAfterCStyleCast: false
 SpaceAfterLogicalNot: false
 SpaceAfterTemplateKeyword: false
@@ -76,12 +119,9 @@ SpaceBeforeInheritanceColon: true
 SpaceBeforeParens: ControlStatements
 SpaceBeforeRangeBasedForLoopColon: true
 SpaceBeforeSquareBrackets: false
-SpaceInEmptyBlock: false
-SpaceInEmptyParentheses: false
-SpacesInCStyleCastParentheses: false
-SpacesInConditionalStatement: false
+SpaceInEmptyBraces: Never
 SpacesInContainerLiterals: false
-SpacesInParentheses: false
+SpacesInParens: Never
 SpacesInSquareBrackets: false
 UseTab: Never
 TabWidth: 4

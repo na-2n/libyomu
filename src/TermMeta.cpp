@@ -1,6 +1,7 @@
 #include "libyomu/TermMeta.hpp"
 
 #include "libyomu/Error.hpp"
+#include "util.hpp"
 
 #include <nlohmann/json.hpp>
 
@@ -10,22 +11,6 @@
 #include <vector>
 
 namespace yomu {
-    namespace {
-        // Combines the single integer and integer array forms
-        std::vector<int> toIntVector(const nlohmann::json& obj)
-        {
-            if (obj.is_number_integer()) {
-                return {obj.get<int>()};
-            }
-
-            if (obj.is_array()) {
-                return obj.get<std::vector<int>>();
-            }
-
-            throw DictionaryError{"Expected integer or integer array: {}", obj.dump()};
-        }
-    } // namespace
-
     void from_json(const nlohmann::json& obj, FreqTermMeta& m)
     {
         if (obj.is_object() && obj.contains("reading")) {
@@ -43,7 +28,7 @@ namespace yomu {
         }
 
         if (auto& pos = obj.at("position"); pos.is_number_integer()) {
-            p._position = pos.get<int>();
+            p._position = util::toInt(pos);
         } else if (pos.is_string()) {
             auto pattern = pos.get<std::string>();
 
@@ -58,11 +43,11 @@ namespace yomu {
         }
 
         if (obj.contains("nasal")) {
-            p._nasal = toIntVector(obj.at("nasal"));
+            p._nasal = util::toIntVector(obj.at("nasal"));
         }
 
         if (obj.contains("devoice")) {
-            p._devoice = toIntVector(obj.at("devoice"));
+            p._devoice = util::toIntVector(obj.at("devoice"));
         }
 
         if (obj.contains("tags")) {

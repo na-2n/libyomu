@@ -1,6 +1,7 @@
 #include "libyomu/Tag.hpp"
 
 #include "libyomu/Error.hpp"
+#include "util.hpp"
 
 #include <nlohmann/json.hpp>
 
@@ -26,9 +27,9 @@ namespace yomu {
 
         arr.at(NAME).get_to(tag._name);
         arr.at(CATEGORY).get_to(tag._category);
-        arr.at(ORDER).get_to(tag._order);
+        tag._order = util::toInt(arr.at(ORDER));
         arr.at(NOTES).get_to(tag._notes);
-        arr.at(SCORE).get_to(tag._score);
+        tag._score = util::toInt(arr.at(SCORE));
 
         return tag;
     }
@@ -43,9 +44,9 @@ namespace yomu {
 
         tag._name = name;
         tag._category = obj.value("category", "");
-        tag._order = obj.value("order", 0);
+        tag._order = obj.contains("order") ? util::toInt(obj.at("order")) : 0;
         tag._notes = obj.value("notes", "");
-        tag._score = obj.value("score", 0);
+        tag._score = obj.contains("score") ? util::toInt(obj.at("score")) : 0;
 
         return tag;
     }

@@ -16,10 +16,16 @@ namespace yomu {
         Frequency() = default;
 
         [[nodiscard]]
-        inline double value() const { return _value; }
+        inline double value() const
+        {
+            return _value;
+        }
 
         [[nodiscard]]
-        inline const std::optional<std::string>& displayValue() const { return _displayValue; }
+        inline const std::optional<std::string>& displayValue() const
+        {
+            return _displayValue;
+        }
 
         friend void from_json(const nlohmann::json& j, Frequency& f);
     };

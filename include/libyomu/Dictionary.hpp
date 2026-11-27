@@ -7,9 +7,11 @@
 
 #include <nlohmann/json.hpp>
 
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace yomu {
@@ -38,7 +40,7 @@ namespace yomu {
             std::optional<std::string> targetLanguage;
             std::optional<std::string> minimumYomitanVersion;
             std::optional<FrequencyMode> frequencyMode;
-            std::optional<UpdateInfo> update;
+            std::optional<UpdateInfo> updateInfo;
         };
 
         Metadata _meta;
@@ -51,23 +53,9 @@ namespace yomu {
         std::vector<KanjiMeta> _kanjiMeta;
         std::vector<Tag> _tags;
 
+        void _parseMetadata(const nlohmann::json& obj);
+
     public:
-        [[nodiscard]]
-        inline const std::vector<Term>& terms() const { return _terms; }
-
-        [[nodiscard]]
-        inline const std::vector<TermMeta>& termMeta() const { return _termMeta; }
-
-        [[nodiscard]]
-        inline const std::vector<Kanji>& kanji() const { return _kanji; }
-
-        [[nodiscard]]
-        inline const std::vector<KanjiMeta>& kanjiMeta() const { return _kanjiMeta; }
-
-        // Tags from tag banks and the legacy `tagMeta` index field
-        [[nodiscard]]
-        inline const std::vector<Tag>& tags() const { return _tags; }
-
         void loadMetadata(const nlohmann::json& obj);
 
         void loadTermBank(const nlohmann::json& arr);
@@ -81,43 +69,113 @@ namespace yomu {
         void loadTagBank(const nlohmann::json& arr);
 
         [[nodiscard]]
-        inline const std::string& title() const { return _meta.title; }
+        inline const std::vector<Term>& terms() const
+        {
+            return _terms;
+        }
 
         [[nodiscard]]
-        inline const std::optional<std::string>& description() const { return _meta.description; }
+        inline const std::vector<TermMeta>& termMeta() const
+        {
+            return _termMeta;
+        }
 
         [[nodiscard]]
-        inline const std::string& revision() const { return _meta.revision; }
+        inline const std::vector<Kanji>& kanji() const
+        {
+            return _kanji;
+        }
 
         [[nodiscard]]
-        inline const std::optional<std::string>& author() const { return _meta.author; }
+        inline const std::vector<KanjiMeta>& kanjiMeta() const
+        {
+            return _kanjiMeta;
+        }
+
+        // Tags from tag banks and the legacy `tagMeta` index field
+        [[nodiscard]]
+        inline const std::vector<Tag>& tags() const
+        {
+            return _tags;
+        }
 
         [[nodiscard]]
-        inline const std::optional<std::string>& url() const { return _meta.url; }
+        inline const std::string& title() const
+        {
+            return _meta.title;
+        }
 
         [[nodiscard]]
-        inline const std::optional<std::string>& attribution() const { return _meta.attribution; }
+        inline const std::optional<std::string>& description() const
+        {
+            return _meta.description;
+        }
 
         [[nodiscard]]
-        inline const std::optional<std::string>& sourceLanguage() const { return _meta.sourceLanguage; }
+        inline const std::string& revision() const
+        {
+            return _meta.revision;
+        }
 
         [[nodiscard]]
-        inline const std::optional<std::string>& targetLanguage() const { return _meta.targetLanguage; }
+        inline const std::optional<std::string>& author() const
+        {
+            return _meta.author;
+        }
 
         [[nodiscard]]
-        inline const std::optional<std::string>& minimumYomitanVersion() const { return _meta.minimumYomitanVersion; }
+        inline const std::optional<std::string>& url() const
+        {
+            return _meta.url;
+        }
 
         [[nodiscard]]
-        inline const std::optional<FrequencyMode>& frequencyMode() const { return _meta.frequencyMode; }
+        inline const std::optional<std::string>& attribution() const
+        {
+            return _meta.attribution;
+        }
 
         [[nodiscard]]
-        inline const std::optional<UpdateInfo>& update() const { return _meta.update; }
+        inline const std::optional<std::string>& sourceLanguage() const
+        {
+            return _meta.sourceLanguage;
+        }
 
         [[nodiscard]]
-        inline int format() const { return _format; }
+        inline const std::optional<std::string>& targetLanguage() const
+        {
+            return _meta.targetLanguage;
+        }
 
         [[nodiscard]]
-        inline bool sequenced() const { return _sequenced; }
+        inline const std::optional<std::string>& minimumYomitanVersion() const
+        {
+            return _meta.minimumYomitanVersion;
+        }
+
+        [[nodiscard]]
+        inline const std::optional<FrequencyMode>& frequencyMode() const
+        {
+            return _meta.frequencyMode;
+        }
+
+        [[nodiscard]]
+        inline const std::optional<UpdateInfo>& updateInfo() const
+        {
+            return _meta.updateInfo;
+        }
+
+        [[nodiscard]]
+        inline int format() const
+        {
+            return _format;
+        }
+
+        [[nodiscard]]
+        inline bool sequenced() const
+        {
+            return _sequenced;
+        }
 
         static std::unique_ptr<Dictionary> fromFile(const std::string& fileName);
     };

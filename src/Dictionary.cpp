@@ -5,17 +5,18 @@
 #include "libyomu/Tag.hpp"
 #include "libyomu/Term.hpp"
 #include "libyomu/TermMeta.hpp"
+#include "util.hpp"
 
 #include <libzippp.h>
 #include <nlohmann/json.hpp>
 
 #include <algorithm>
 #include <format>
-#include <iostream>
 #include <ranges>
 #include <string>
 
 #ifdef _DEBUG
+#include <iostream>
 #define LOG_DBG(str, ...) (std::cout << std::format(str, __VA_ARGS__) << std::endl)
 #else
 #define LOG_DBG(str, ...)
@@ -33,23 +34,46 @@ namespace yomu {
             }
 
             auto num = name.substr(prefix.size(), name.size() - prefix.size() - ext.size());
-            return !num.empty() && std::ranges::all_of(num, [](char c) { return c >= '0' && c <= '9'; });
+            return !num.empty() &&
+                   std::ranges::all_of(num, [](char c) { return c >= '0' && c <= '9'; });
         }
 
-        bool isHttpUrl(std::string_view url)
+        inline bool isHttpUrl(std::string_view url)
         {
             return url.starts_with("http://") || url.starts_with("https://");
         }
 
-        void requireArray(const nlohmann::json& arr, std::string_view bank)
+        // libzippp reports errors through a plain function pointer and prints them to stderr by
+        // default
+        thread_local auto zipError = std::string{};
+
+        void captureZipError(const std::string& /*message*/, const std::string& strerror,
+                             int /*zipErrorCode*/, int /*systemErrorCode*/)
+        {
+            zipError = strerror;
+        }
+
+        // Parses each entry of a bank, converting nlohmann's exceptions from wrongly typed fields
+        inline void loadBank(const nlohmann::json& arr, std::string_view bank,
+                      const std::function<void(const nlohmann::json&)>& loadEntry)
         {
             if (!arr.is_array()) {
                 throw DictionaryError{"{} must be an array, got {}", bank, arr.type_name()};
             }
+
+            try {
+                for (const auto& obj : arr) {
+                    loadEntry(obj);
+                }
+            }
+            catch (const nlohmann::json::exception& e) {
+                throw DictionaryError{"Invalid {} entry: {}", bank, e.what()};
+            }
         }
+
     } // namespace
 
-    void Dictionary::loadMetadata(const nlohmann::json& obj)
+    void Dictionary::_parseMetadata(const nlohmann::json& obj)
     {
         if (!obj.is_object()) {
             throw DictionaryError{"index.json must be an object, got {}", obj.type_name()};
@@ -64,9 +88,9 @@ namespace yomu {
         }
 
         if (obj.contains("format") && obj.at("format").is_number()) {
-            _format = obj.at("format");
+            _format = util::toInt(obj.at("format"));
         } else if (obj.contains("version")) {
-            _format = obj.at("version");
+            _format = util::toInt(obj.at("version"));
         } else {
             throw DictionaryError{"index.json is missing the required 'format' or 'version' field"};
         }
@@ -113,11 +137,12 @@ namespace yomu {
             auto indexUrl = obj.value("indexUrl", "");
             auto downloadUrl = obj.value("downloadUrl", "");
 
-            if (!obj.at("isUpdatable").get<bool>() || !isHttpUrl(indexUrl) || !isHttpUrl(downloadUrl)) {
+            if (!obj.at("isUpdatable").get<bool>() || !isHttpUrl(indexUrl) ||
+                !isHttpUrl(downloadUrl)) {
                 throw DictionaryError{"Invalid index data for updatable dictionary"};
             }
 
-            _meta.update = UpdateInfo{
+            _meta.updateInfo = UpdateInfo{
                 .indexUrl = std::move(indexUrl),
                 .downloadUrl = std::move(downloadUrl),
             };
@@ -131,49 +156,47 @@ namespace yomu {
         }
     }
 
+    void Dictionary::loadMetadata(const nlohmann::json& obj)
+    {
+        try {
+            _parseMetadata(obj);
+        }
+        catch (const nlohmann::json::exception& e) {
+            throw DictionaryError{"Invalid index.json: {}", e.what()};
+        }
+    }
+
     void Dictionary::loadTermBank(const nlohmann::json& arr)
     {
-        requireArray(arr, "Term bank");
-
-        for (const auto& obj : arr) {
+        loadBank(arr, "Term bank", [&](const nlohmann::json& obj) {
             _terms.push_back(Term::fromJson(obj, _format));
-        }
+        });
     }
 
     void Dictionary::loadTermMetaBank(const nlohmann::json& arr)
     {
-        requireArray(arr, "Term meta bank");
-
-        for (const auto& obj : arr) {
-            _termMeta.push_back(TermMeta::fromJson(obj));
-        }
+        loadBank(arr, "Term meta bank",
+                  [&](const nlohmann::json& obj) { _termMeta.push_back(TermMeta::fromJson(obj)); });
     }
 
     void Dictionary::loadKanjiBank(const nlohmann::json& arr)
     {
-        requireArray(arr, "Kanji bank");
-
-        for (const auto& obj : arr) {
+        loadBank(arr, "Kanji bank", [&](const nlohmann::json& obj) {
             _kanji.push_back(Kanji::fromJson(obj, _format));
-        }
+        });
     }
 
     void Dictionary::loadKanjiMetaBank(const nlohmann::json& arr)
     {
-        requireArray(arr, "Kanji meta bank");
-
-        for (const auto& obj : arr) {
+        loadBank(arr, "Kanji meta bank", [&](const nlohmann::json& obj) {
             _kanjiMeta.push_back(KanjiMeta::fromJson(obj));
-        }
+        });
     }
 
     void Dictionary::loadTagBank(const nlohmann::json& arr)
     {
-        requireArray(arr, "Tag bank");
-
-        for (const auto& obj : arr) {
-            _tags.push_back(Tag::fromJson(obj));
-        }
+        loadBank(arr, "Tag bank",
+                  [&](const nlohmann::json& obj) { _tags.push_back(Tag::fromJson(obj)); });
     }
 
     std::unique_ptr<Dictionary> Dictionary::fromFile(const std::string& fileName)
@@ -189,51 +212,65 @@ namespace yomu {
         };
 
         auto zip = libzippp::ZipArchive{fileName};
+        zip.setErrorHandlerCallback(captureZipError);
 
+        zipError.clear();
         zip.open();
         if (!zip.isOpen()) {
-            throw DictionaryError{"Failed to open dictionary archive: {}", fileName};
+            throw DictionaryError{"Failed to open dictionary archive {}: {}", fileName, zipError};
         }
 
         auto dict = std::make_unique<Dictionary>();
         auto loadEntry = [&](libzippp::ZipEntry& entry, FileType type) {
-            // readAsBinary hands over ownership of the buffer
-            auto data = std::unique_ptr<libzippp_uint8[]>{entry.readAsBinary()};
+            // readAsBinary hands over a buffer allocated with `new char[]`
+            auto data = std::unique_ptr<char[]>{
+                reinterpret_cast<char*>(entry.readAsBinary())}; // NOLINT(*-reinterpret-cast)
             if (data == nullptr) {
-                throw DictionaryError{"Failed to read {} from {}", entry.getName(), fileName};
+                throw DictionaryError{"Failed to read {} from {}: {}", entry.getName(), fileName,
+                                      zipError};
             }
-
-            auto obj = nlohmann::json::parse(data.get(), data.get() + entry.getSize()); // NOLINT(*-pointer-arithmetic)
 
             LOG_DBG("Loading file: {}", entry.getName());
 
-            switch (type) {
-                case FileType::Index:
-                    dict->loadMetadata(obj);
-                    break;
+            // Malformed JSON and wrongly typed fields surface as nlohmann exceptions
+            try {
+                auto obj = nlohmann::json::parse(
+                    data.get(), data.get() + entry.getSize()); // NOLINT(*-pointer-arithmetic)
 
-                case FileType::TermBank:
-                    dict->loadTermBank(obj);
-                    break;
+                switch (type) {
+                    case FileType::Index:
+                        dict->loadMetadata(obj);
+                        break;
 
-                case FileType::TermMetaBank:
-                    dict->loadTermMetaBank(obj);
-                    break;
+                    case FileType::TermBank:
+                        dict->loadTermBank(obj);
+                        break;
 
-                case FileType::KanjiBank:
-                    dict->loadKanjiBank(obj);
-                    break;
+                    case FileType::TermMetaBank:
+                        dict->loadTermMetaBank(obj);
+                        break;
 
-                case FileType::KanjiMetaBank:
-                    dict->loadKanjiMetaBank(obj);
-                    break;
+                    case FileType::KanjiBank:
+                        dict->loadKanjiBank(obj);
+                        break;
 
-                case FileType::TagBank:
-                    dict->loadTagBank(obj);
-                    break;
+                    case FileType::KanjiMetaBank:
+                        dict->loadKanjiMetaBank(obj);
+                        break;
 
-                default:
-                    break;
+                    case FileType::TagBank:
+                        dict->loadTagBank(obj);
+                        break;
+
+                    default:
+                        break;
+                }
+            }
+            catch (const nlohmann::json::exception& e) {
+                throw DictionaryError{"Invalid data in {}: {}", entry.getName(), e.what()};
+            }
+            catch (const DictionaryError& e) {
+                throw DictionaryError{"{}: {}", entry.getName(), e.what()};
             }
         };
 

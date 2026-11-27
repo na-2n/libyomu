@@ -3,11 +3,11 @@
 #include <libyomu/Frequency.hpp>
 #include <libyomu/Glossary.hpp>
 #include <libyomu/Kanji.hpp>
+#include <libyomu/StructuredContent.hpp>
 #include <libyomu/Tag.hpp>
 #include <libyomu/Term.hpp>
 #include <libyomu/TermMeta.hpp>
 
-#include <algorithm>
 #include <format>
 #include <iostream>
 #include <memory>
@@ -31,7 +31,7 @@ std::string orNone(const std::optional<T>& value)
     if constexpr (std::is_same_v<T, std::string>) {
         return *value;
     } else {
-        return std::to_string(*value);
+        return std::format("{}", *value);
     }
 }
 
@@ -66,6 +66,96 @@ std::string frequency(const yomu::Frequency& freq)
     return std::format("{}", freq.value());
 }
 
+std::string_view tagName(yomu::ContentTag tag)
+{
+    using enum yomu::ContentTag;
+
+    switch (tag) {
+        case Br: return "br";
+        case Ruby: return "ruby";
+        case Rt: return "rt";
+        case Rp: return "rp";
+        case Table: return "table";
+        case Thead: return "thead";
+        case Tbody: return "tbody";
+        case Tfoot: return "tfoot";
+        case Tr: return "tr";
+        case Td: return "td";
+        case Th: return "th";
+        case Span: return "span";
+        case Div: return "div";
+        case Ol: return "ol";
+        case Ul: return "ul";
+        case Li: return "li";
+        case Details: return "details";
+        case Summary: return "summary";
+        case Img: return "img";
+        case A: return "a";
+    }
+
+    return "?";
+}
+
+void printContent(const std::vector<yomu::ContentNode>& nodes, int depth = 0)
+{
+    auto indent = std::string(static_cast<size_t>(depth) * 2, ' ');
+
+    for (auto& node : nodes) {
+        if (auto text = node.text()) {
+            std::cout << indent << '"' << *text << '"' << NL;
+            continue;
+        }
+
+        auto& el = *node.element();
+        std::cout << indent << "<" << tagName(el.tag());
+
+        if (auto& lang = el.lang()) {
+            std::cout << " lang=" << *lang;
+        }
+        if (auto& title = el.title()) {
+            std::cout << " title=\"" << *title << "\"";
+        }
+        if (el.colSpan() != 1 || el.rowSpan() != 1) {
+            std::cout << " span=" << el.colSpan() << "x" << el.rowSpan();
+        }
+        if (el.open()) {
+            std::cout << " open";
+        }
+        if (auto& href = el.href()) {
+            std::cout << " href=" << *href << (el.internalLink() ? " (internal)" : "");
+        }
+        if (auto& img = el.image()) {
+            std::cout << " path=" << img->path() << " size=" << orNone(img->width()) << "x"
+                      << orNone(img->height());
+        }
+        for (auto& [key, value] : el.data()) {
+            std::cout << " data-" << key << "=" << value;
+        }
+        if (auto& style = el.style()) {
+            std::cout << " style{";
+            if (style->fontWeight == yomu::ContentStyle::FontWeight::Bold) {
+                std::cout << " bold";
+            }
+            if (auto& size = style->fontSize) {
+                std::cout << " size=" << *size;
+            }
+            if (auto& color = style->color) {
+                std::cout << " color=" << *color;
+            }
+            if (auto& margin = style->marginTop) {
+                std::cout << " marginTop=" << *margin;
+            }
+            if (auto& lines = style->textDecorationLine) {
+                std::cout << " decorations=" << lines->size();
+            }
+            std::cout << " }";
+        }
+
+        std::cout << ">" << NL;
+        printContent(el.content(), depth + 1);
+    }
+}
+
 void printMetadata(const yomu::Dictionary& dict)
 {
     std::cout << "Title: " << dict.title() << NL;
@@ -89,9 +179,9 @@ void printMetadata(const yomu::Dictionary& dict)
     }
     std::cout << NL;
 
-    if (auto& update = dict.update()) {
-        std::cout << "Update index URL: " << update->indexUrl << NL;
-        std::cout << "Update download URL: " << update->downloadUrl << NL;
+    if (auto& updateInfo = dict.updateInfo()) {
+        std::cout << "Update index URL: " << updateInfo->indexUrl << NL;
+        std::cout << "Update download URL: " << updateInfo->downloadUrl << NL;
     }
 
     std::cout << "Counts: " << dict.terms().size() << " terms, " << dict.termMeta().size()
@@ -126,6 +216,13 @@ void printTerm(const yomu::Term& term)
             std::cout << "Title: " << orNone(img->title()) << NL;
             std::cout << "Alt: " << orNone(img->alt()) << NL;
             std::cout << "Description: " << orNone(img->description()) << NL;
+        } else if (auto structured = gloss.structured()) {
+            std::cout << std::string(chars, '-') << NL;
+            printContent(structured->content());
+        } else if (auto deinflection = gloss.deinflection()) {
+            std::cout << std::string(chars, '-') << NL;
+            std::cout << "Inflection of " << deinflection->uninflected() << ": "
+                      << join(deinflection->rules()) << NL;
         }
         std::cout << std::string(chars, '-') << NL;
     }
@@ -208,6 +305,9 @@ int main(int argc, char* argv[])
         dict = yomu::Dictionary::fromFile(path);
     } catch (const yomu::DictionaryError& e) {
         std::cerr << "Failed to load dictionary: " << e.what() << NL;
+        return 1;
+    } catch (const std::exception& e) {
+        std::cerr << "Unexpected error while loading dictionary: " << e.what() << NL;
         return 1;
     }
 
